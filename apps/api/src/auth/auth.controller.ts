@@ -15,6 +15,7 @@ import {
   ApiCreatedResponse,
   ApiMovedPermanentlyResponse,
   ApiNoContentResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiQuery,
   ApiTags,
@@ -22,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { UsersService } from '../users/users.service';
 import { AccessTokenResponse, SessionRequest } from 'types';
+import { AccessTokenResponseDto } from './access-token-response.dto';
 import { AuthService } from './auth.service';
 import { CheckTfaTokenDto } from './check-tfa-token.dto';
 import { FtOauth2AuthGuard } from './ft-oauth2-auth.guard';
@@ -47,6 +49,7 @@ export class AuthController {
       'Authenticate the user against the 42 Authorization Server (managed by Passport).',
   })
   @ApiQuery({ type: FtOauth2Dto })
+  @ApiOkResponse({ type: AccessTokenResponseDto })
   @ApiMovedPermanentlyResponse({
     description:
       'The user needs to authorize the request (should not happen in front to back communication).',
