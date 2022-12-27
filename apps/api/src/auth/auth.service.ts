@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
-import { AccessTokenResponse, FtUser, User } from 'types';
+import { AccessTokenResponse, FtUser, JwtPayload, User } from 'types';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class AuthService {
   }
 
   login(user: User): AccessTokenResponse {
-    const payload = {
+    const payload: JwtPayload = {
       sub: user.id,
       name: user.name,
     };
