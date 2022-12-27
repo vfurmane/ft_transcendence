@@ -1,6 +1,8 @@
 import {
+  Body,
   Controller,
   Get,
+  HttpCode,
   InternalServerErrorException,
   Logger,
   Post,
@@ -8,9 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiMovedPermanentlyResponse,
+  ApiNoContentResponse,
   ApiOperation,
   ApiQuery,
   ApiTags,
@@ -20,6 +24,7 @@ import * as speakeasy from 'speakeasy';
 import { UsersService } from '../users/users.service';
 import { AccessTokenResponse, SessionRequest } from 'types';
 import { AuthService } from './auth.service';
+import { CheckTfaTokenDto } from './check-tfa-token.dto';
 import { FtOauth2AuthGuard } from './ft-oauth2-auth.guard';
 import { FtOauth2Dto } from './ft-oauth2.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -85,5 +90,23 @@ export class AuthController {
     const tfaSecret = speakeasy.generateSecret();
     await this.usersService.createTfa(req.user, tfaSecret.base32);
     return tfaSecret;
+  }
+
+  @Post('tfa/check')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Check a OTP token.' })
+  @ApiNoContentResponse({ description: 'The token is valid.' })
+  @ApiBadRequestResponse({
+    description: 'The OTP is invalid or TFA is not setup yet.',
+  })
+  checkTfa(@Req() req: SessionRequest, @Body() body: CheckTfaTokenDto): void {
+    if (!req.user) {
+      this.logger.error(
+        'This is the impossible type error where the user is authenticated but the `req.user` is `undefined`',
+      );
+      throw new InternalServerErrorException('Unexpected error');
+    }
+    this.authService.checkTfa(req.user, body.token);
   }
 }
