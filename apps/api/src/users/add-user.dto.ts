@@ -1,5 +1,14 @@
+import { IsEmail, IsNotEmpty } from 'class-validator';
+import { Exclude } from 'class-transformer';
+
 export class AddUserDto {
-  name!: string;
-  email!: string;
-  password!: string;
+  @IsNotEmpty()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @Exclude()
+  @IsNotEmpty()
+  password: string;
 }
