@@ -28,14 +28,20 @@ services:
       - 3000:3000
     networks:
       - app
+    environment:
+      POSTGRES_HOST: "database"
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_PORT: ${DATABASE_PORT}
+      JWT_SECRET: ${JWT_SECRET}
   database:
     image: postgres
-    container_name: database
     restart: always
     networks:
       - app
     environment:
-      POSTGRES_RANDOM_ROOT_PASSWORD: true
+      POSTGRES_RANDOM_ROOT_PASSWORD: "true"
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}

@@ -18,9 +18,9 @@ import { AuthModule } from './auth/auth.module';
         type: 'postgres',
         host: configService.get('POSTGRES_HOST'),
         port: 5432,
-        username: configService.get('POSTGRES_USERNAME'),
+        username: configService.get('POSTGRES_USER'),
         password: configService.get('POSTGRES_PASSWORD'),
-        database: configService.get('POSTGRES_DATABASE'),
+        database: configService.get('POSTGRES_DB'),
         autoLoadEntities: true,
         // TODO check NODE_ENV
         //
