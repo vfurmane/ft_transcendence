@@ -9,13 +9,17 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() req: any) {
-    const user = await this.authService.createUser(req.username, req.email, req.password);
+    const user = await this.authService.createUser(
+      req.username,
+      req.email,
+      req.password
+    );
     return user;
   }
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req: any) {
-    return req.user;
+    return this.authService.login(req.user);
   }
 }
