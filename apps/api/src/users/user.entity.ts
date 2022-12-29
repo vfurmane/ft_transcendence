@@ -1,7 +1,9 @@
+import { State } from '../auth/state.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -16,6 +18,9 @@ export class User {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  @OneToMany(() => State, (state) => state.user)
+  states!: State[];
 
   @Column('varchar', { length: 255, unique: true })
   email!: string;
