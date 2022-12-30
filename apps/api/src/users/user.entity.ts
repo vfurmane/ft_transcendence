@@ -1,3 +1,4 @@
+import { ConversationToUser } from 'src/conversations/conversationToUser.entity';
 import {
   Column,
   CreateDateColumn,
@@ -11,23 +12,26 @@ import { Message } from '../conversations/message.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @Column('varchar', { length: 255, unique: true })
-  email: string;
+  email!: string;
 
   @Column('varchar', { length: 30, unique: true })
-  name: string;
+  name!: string;
 
   @Column('varchar', { length: 255, nullable: true })
-  password: string | null;
+  password!: string | null;
 
   @OneToMany(()=> Message, (message) => message.sender)
-  messages: Message[];
+  messages!: Message[];
+
+  @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.user)
+  conversationToUsers!: ConversationToUser[]; 
 }

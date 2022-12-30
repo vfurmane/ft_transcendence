@@ -3,12 +3,11 @@ import { Exclude } from 'class-transformer';
 
 export class AddUserDto {
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
-  @Exclude()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }

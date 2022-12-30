@@ -1,4 +1,0 @@
-libva error: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
-[20323:1229/114219.815300:ERROR:gpu_memory_buffer_support_x11.cc(44)] dri3 extension not supported.
-[90m[main 2022-12-29T16:42:22.727Z][0m update#ctor - updates are disabled as there is no update URL
-[90m[main 2022-12-29T16:42:46.846Z][0m Starting extension host with pid 20668 (fork() took 8 ms).

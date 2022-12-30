@@ -12,20 +12,20 @@ import { Conversation } from './conversation.entity';
 @Entity()
 export class Message {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @ManyToOne(() => User, (user) => user.messages)
-  sender: User
+  sender!: User
 
   @ManyToOne(() => Conversation, (conversation) => conversation.messages)
-  conversation: Conversation
+  conversation!: Conversation
 
   @Column("text")
-  content: string
+  content!: string
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 }

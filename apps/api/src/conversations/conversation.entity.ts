@@ -6,28 +6,32 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ConversationToUser } from './conversationToUser.entity';
 import { Message } from './message.entity';
 
 @Entity()
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  name: string
+  name!: string
 
-  @Column()
-  public: boolean
+  @Column({default: false})
+  public!: boolean
 
-  @Column('varchar', { length: 255, nullable: true })
-  password: string
+  @Column('varchar', { length: 255, nullable: true, default: null })
+  password!: string
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @OneToMany(() => Message, (message) => message.conversation)
-  messages: Message[]
+  messages!: Message[]
+
+  @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.conversation)
+  conversationToUsers!: ConversationToUser[];
 }
