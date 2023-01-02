@@ -17,8 +17,12 @@ export class ConversationsService {
     async createConversation(newConversation : createConversationDto, creator: User): Promise<Conversation>
     {
         const createdConversation = this.conversationRepository.create(newConversation);
+        await this.conversationRepository.save(createdConversation);
         const conversationToUser = this.conversationToUserRepository.create({lastRead: new Date(), role: conversationRole.OWNER, user: creator, conversation: createdConversation})
-        
-        return (await (this.conversationToUserRepository.save(conversationToUser))).conversation;
+        await this.conversationToUserRepository.save(conversationToUser);
+
+        console.error(createdConversation);
+        console.error(conversationToUser);
+        return (createdConversation);
     }
 }

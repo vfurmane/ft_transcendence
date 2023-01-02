@@ -1,3 +1,10 @@
+export interface State {
+  id: string;
+  created_at: Date;
+  updated_at: Date;
+  token: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -5,8 +12,10 @@ export interface User {
   password: string | null;
 }
 
+
 export interface FtUser {
   login: string;
+  email: string;
 }
 
 export interface AccessTokenResponse {
@@ -18,4 +27,8 @@ export interface JwtPayload {
   username: string;
 }
 
-export type SessionRequest = Request & { user: User }
+export interface AccessTokenResponse {
+  access_token: string;
+}
+
+export type SessionRequest = Request & { state?: State, user?: User }

@@ -1,16 +1,25 @@
-import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from 'src/users/users.module';
 import { UsersService } from 'src/users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { PassportModule } from '@nestjs/passport';
+import { FtOauth2Strategy } from './ft-oauth2.strategy';
+import { State } from './state.entity';
 import { LocalStrategy } from './local.strategy';
-import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt-strategy';
 
 @Module({
   imports: [
+    ConfigModule,
+    HttpModule.register({
+      timeout: 5000,
+      maxRedirects: 5,
+    }),
     UsersModule,
     PassportModule,
     JwtModule.registerAsync({
@@ -21,9 +30,19 @@ import { JwtStrategy } from './jwt-strategy';
         signOptions: { expiresIn: '5m' },
       }),
     }),
+    PassportModule,
+    TypeOrmModule.forFeature([State]),
+    UsersModule,
+  ],
+  providers: [
+    AuthService,
+    FtOauth2Strategy,
+    JwtStrategy,
+    LocalStrategy,
+    Logger,
+    UsersService,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersService, LocalStrategy, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

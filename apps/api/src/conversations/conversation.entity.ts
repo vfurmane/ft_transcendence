@@ -29,9 +29,9 @@ export class Conversation {
   @UpdateDateColumn()
   updated_at!: Date;
 
-  @OneToMany(() => Message, (message) => message.conversation)
+  @OneToMany(() => Message, (message) => message.conversation, {cascade: true})
   messages!: Message[]
 
-  @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.conversation)
+  @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.conversation, {cascade: true})
   conversationToUsers!: ConversationToUser[];
 }
