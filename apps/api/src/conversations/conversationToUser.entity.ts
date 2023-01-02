@@ -26,9 +26,9 @@ export class ConversationToUser {
   @Column()
   lastRead!: Date;
 
-  @ManyToOne(() => User, (user) => user.conversationToUsers)
+  @ManyToOne(() => User, (user) => user.conversationToUsers, {eager: true})
   user!: User;
 
-  @ManyToOne(()=> Conversation, (conversation) => conversation.conversationToUsers)
+  @ManyToOne(()=> Conversation, (conversation) => conversation.conversationToUsers, {eager: true})
   conversation!: Conversation;
 }

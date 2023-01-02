@@ -18,7 +18,7 @@ export class Conversation {
   name!: string
 
   @Column({default: false})
-  public!: boolean
+  groupConversation!: boolean
 
   @Column('varchar', { length: 255, nullable: true, default: null })
   password!: string

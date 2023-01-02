@@ -4,7 +4,8 @@ import { CurrentUser } from 'src/users/current-user.decorator';
 import { User } from 'src/users/user.entity';
 import { Conversation } from './conversation.entity';
 import { ConversationsService } from './conversations.service';
-import { createConversationDto } from './createConversation.dto';
+import { createConversationDto } from './dtos/createConversation.dto';
+import { updateRoleDto } from './dtos/updateRole.dto';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -15,6 +16,13 @@ export class ConversationsController {
     createConversation(@Body() newConversation: createConversationDto, @CurrentUser() currentUser: User): Promise<Conversation>
     {
         return (this.conversationsService.createConversation(newConversation, currentUser));
+    }
+
+    @Post('/updateRole')
+    @UseGuards(JwtAuthGuard)
+    updateRole(@Body() newRole: updateRoleDto, @CurrentUser() CurrentUser: User): Promise<boolean>
+    {
+        return this.conversationsService.updateRole(newRole, CurrentUser);
     }
 
 }
