@@ -12,6 +12,16 @@ export interface User {
   password: string | null;
 }
 
+export interface unreadMessagesResponse
+{
+  totalNumberOfUnreadMessages: number;
+  UnreadMessage: unreadMessages[];
+}
+
+export interface unreadMessages {
+  conversationId: string;
+  numberOfUnreadMessages: number;
+}
 
 export interface FtUser {
   login: string;

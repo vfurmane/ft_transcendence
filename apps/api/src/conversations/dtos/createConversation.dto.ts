@@ -16,5 +16,5 @@ export class createConversationDto {
     @IsArray()
     @ArrayNotEmpty()
     @IsUUID('all', {each: true})
-    participants: string[];
+    participants!: string[];
 }

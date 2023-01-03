@@ -1,19 +1,22 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/user.entity';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository, RepositoryNotTreeError } from 'typeorm';
+import { unreadMessagesResponse } from 'types';
 import { Conversation } from './conversation.entity';
 import { conversationRole } from './conversationRole.enum';
 import { ConversationToUser } from './conversationToUser.entity';
 import { createConversationDto } from './dtos/createConversation.dto';
 import { updateRoleDto } from './dtos/updateRole.dto';
+import { Message } from './message.entity';
 
 @Injectable()
 export class ConversationsService {
     constructor(
         @InjectRepository(Conversation) private readonly conversationRepository: Repository<Conversation>,
         @InjectRepository(ConversationToUser) private readonly conversationToUserRepository: Repository<ConversationToUser>,
-        @InjectRepository(User) private readonly userRepository: Repository<User>
+        @InjectRepository(User) private readonly userRepository: Repository<User>,
+        @InjectRepository(Message) private readonly messageRepository: Repository<Message>
     ) {}
 
     async getListOfDMs(user: User): Promise<Conversation[]>
@@ -172,5 +175,134 @@ export class ConversationsService {
         }
         this.conversationToUserRepository.save(targetUserRole);
         return (true);
+    }
+
+    async getConversations(currentUser: User): Promise<Conversation[]>
+    {
+        let conversations : Conversation[] = [];
+        const fullUser = await this.userRepository.findOne({
+            relations: 
+            {
+                conversationToUsers: true
+            },
+            where:
+            {
+                id: currentUser.id
+            }
+        })
+        if (!fullUser)
+        {
+            throw new NotFoundException();
+        }
+        for (let conversationToUser of fullUser.conversationToUsers)
+        {
+            conversations.push(conversationToUser.conversation);
+        }
+        console.error(currentUser);
+        return (conversations);
+    }
+
+    async getMessages(currentUser: User, conversationId: string): Promise<Message[]>
+    {
+        const conversation = await this.conversationRepository.findOne({
+            relations: 
+            {
+                conversationToUsers: true,
+                messages:
+                {
+                    sender: true
+                }
+            },
+            where:
+            {
+                id: conversationId,
+                conversationToUsers : {
+                    user: {
+                        id : currentUser.id
+                    }
+                }
+            }
+        })
+        if (!conversation)
+        {
+            throw new NotFoundException();
+        }
+        const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
+        userRole.lastRead = new Date()
+        this.conversationToUserRepository.save(userRole);
+        return (conversation.messages);
+    }
+
+
+    async unreadCount(currentUser: User): Promise<unreadMessagesResponse>
+    {
+        let response : unreadMessagesResponse = {totalNumberOfUnreadMessages: 0, UnreadMessage: []}
+        const conversationToUser = await this.conversationToUserRepository.find({
+            where: {
+                user:
+                {
+                    id: currentUser.id
+                }
+            }
+        }
+        )
+        if (!conversationToUser.length)
+        {
+            return (response)
+        }
+        for (let conversation of conversationToUser)
+        {
+            const unreadMessages = await this.messageRepository.findAndCount({
+                relations:
+                {
+                    conversation: true
+                },
+                where:
+                {
+                    created_at: MoreThan(conversation.lastRead),
+                    conversation:
+                    {
+                        id : conversation.conversation.id
+                    }
+                }
+            })
+            if (unreadMessages[1])
+            {
+                response.totalNumberOfUnreadMessages += unreadMessages[1];
+                response.UnreadMessage.push({conversationId: unreadMessages[0][0].conversation.id, numberOfUnreadMessages: unreadMessages[1]})
+            }
+        }
+        return (response);
+    }
+
+    async postMessage(currentUser: User, conversationId: string, content: string)
+    {
+        let conversation = await this.conversationRepository.findOne(
+            {
+                relations:
+                {
+                    conversationToUsers: true                    
+                },
+                where:
+                {
+                    id: conversationId,
+                    conversationToUsers:
+                    {
+                        user:
+                        {
+                            id: currentUser.id
+                        }
+                    }
+                }
+            }
+        )
+        if (!conversation)
+            return new NotFoundException()
+        const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
+        userRole.lastRead = new Date()
+        const newMessage = this.messageRepository.create({sender: currentUser, conversation: conversation, content: content});
+        this.messageRepository.save(newMessage);
+        console.error(newMessage);
+        return (true)
     }
 }
