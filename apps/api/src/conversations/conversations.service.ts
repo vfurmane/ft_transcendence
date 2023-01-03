@@ -9,6 +9,7 @@ import { ConversationToUser } from './conversationToUser.entity';
 import { createConversationDto } from './dtos/createConversation.dto';
 import { updateRoleDto } from './dtos/updateRole.dto';
 import { Message } from './message.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ConversationsService {
@@ -88,6 +89,11 @@ export class ConversationsService {
         if (!newConversation.groupConversation)
         {
             createdConversation.name = `${creator.name} - ${users[0].name}`;
+        }
+        if (createdConversation.password)
+        {
+            const salt = await bcrypt.genSalt();
+            createdConversation.password =  await bcrypt.hash(createdConversation.password, salt);
         }
         await this.conversationRepository.save(createdConversation);
         if (newConversation.groupConversation === false)
@@ -304,5 +310,35 @@ export class ConversationsService {
         this.messageRepository.save(newMessage);
         console.error(newMessage);
         return (true)
+    }
+
+    async joinConversation(currentUser: User, conversationId: string, password: string | null)
+    {
+        const conversation = await this.conversationRepository.findOne({
+            relations:
+            {
+                conversationToUsers: true
+            },
+            where: {
+                id: conversationId
+            }
+        });
+        if (!conversation)
+            throw new NotFoundException()
+        const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)
+        if (userRole.length)
+            return (conversation)
+        if (conversation.groupConversation === false)
+            throw new ForbiddenException()
+        if (conversation.password)
+        {
+            if (!password)
+                throw new ForbiddenException("This conversation requires a password")
+            else if (!(await bcrypt.compare(password, conversation.password)))
+                throw new ForbiddenException();
+        }
+        const joined = this.conversationToUserRepository.create({role: conversationRole.USER, lastRead: new Date(), user: currentUser, conversation: conversation});
+        this.conversationToUserRepository.save(joined);
+        return (conversation)
     }
 }

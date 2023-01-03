@@ -53,4 +53,18 @@ export class ConversationsController {
     {
         return (this.conversationsService.postMessage(currentUser, conversationId, content.content));
     }
+
+    @Get('/:id/join')
+    @UseGuards(JwtAuthGuard)
+    joinConversation(@Param('id') conversationId: string, @CurrentUser() currentUser : User)
+    {
+        return this.conversationsService.joinConversation(currentUser, conversationId, null);
+    }
+
+    @Post('/:id/join')
+    @UseGuards(JwtAuthGuard)
+    joinProtectedConversation(@Param('id') conversationId: string, @CurrentUser() currentUser : User, @Body() password: string)
+    {
+        return this.conversationsService.joinConversation(currentUser, conversationId, password);
+    }
 }
