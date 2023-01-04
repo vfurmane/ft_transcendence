@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
@@ -10,7 +11,9 @@ import {
   Post,
   Req,
   UnauthorizedException,
+  Request,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -26,7 +29,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { UsersService } from '../users/users.service';
-import { AccessTokenResponse, SessionRequest, TfaNeededResponse } from 'types';
+import {
+  AccessTokenResponse,
+  SessionRequest,
+  TfaNeededResponse,
+  User,
+} from 'types';
 import { AccessTokenResponseDto } from './access-token-response.dto';
 import { AuthService } from './auth.service';
 import { CheckTfaTokenStateDto } from './check-tfa-token-state.dto';
@@ -37,6 +45,8 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { SpeakeasyGeneratedSecretDto } from './speakeasy-generated-secret.dto';
 import { StateGetGuard } from './state-get.guard';
 import { StatePostGuard } from './state-post.guard';
+import { LocalAuthGuard } from './local-auth.guard';
+import { RegisterUserDto } from 'src/users/register-user.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -193,5 +203,37 @@ export class AuthController {
     await this.authService.removeState(req.state);
     this.logger.log(`${req.state.user.name} validated TFA`);
     return this.authService.login(req.state.user);
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Post('register')
+  async register(@Body() registerUserDto: RegisterUserDto): Promise<User> {
+    const user = await this.authService.createUser(registerUserDto);
+    return user;
+  }
+
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  async login(@Request() req: SessionRequest): Promise<AccessTokenResponse> {
+    if (!req.user) {
+      this.logger.error(
+        'This is the impossible type error where the user is authenticated but the `req.user` is `undefined`',
+      );
+      throw new InternalServerErrorException('Unexpected error');
+    }
+    return this.authService.login(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Get('profile')
+  async getProfile(@Request() req: SessionRequest): Promise<User> {
+    if (!req.user) {
+      this.logger.error(
+        'This is the impossible type error where the user is authenticated but the `req.user` is `undefined`',
+      );
+      throw new InternalServerErrorException('Unexpected error');
+    }
+    return req.user;
   }
 }

@@ -7,15 +7,18 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Exclude()
   @CreateDateColumn()
   created_at!: Date;
 
+  @Exclude()
   @UpdateDateColumn()
   updated_at!: Date;
 
@@ -28,6 +31,7 @@ export class User {
   @Column('varchar', { length: 30, unique: true })
   name!: string;
 
+  @Exclude()
   @Column('varchar', { length: 255, nullable: true })
   password!: string | null;
 

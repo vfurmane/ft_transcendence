@@ -12,6 +12,7 @@ export interface User {
   email: string;
   tfa_secret: string | null;
   tfa_setup: boolean;
+  password: string | null;
 }
 
 export interface FtUser {
@@ -34,3 +35,8 @@ export interface JwtPayload {
 }
 
 export type SessionRequest = Request & { state?: State, user?: User }
+
+export interface JwtPayload {
+  sub: string;
+  name: string;
+}

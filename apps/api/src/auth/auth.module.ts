@@ -11,11 +11,14 @@ import { AuthService } from './auth.service';
 import { FtOauth2Strategy } from './ft-oauth2.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { State } from './state.entity';
+import { LocalStrategy } from './local.strategy';
 
 @Module({
   imports: [
     ConfigModule,
     HttpModule,
+    UsersModule,
+    PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -28,7 +31,15 @@ import { State } from './state.entity';
     TypeOrmModule.forFeature([State]),
     UsersModule,
   ],
-  providers: [AuthService, FtOauth2Strategy, JwtStrategy, Logger, UsersService],
+  providers: [
+    AuthService,
+    FtOauth2Strategy,
+    JwtStrategy,
+    LocalStrategy,
+    Logger,
+    UsersService,
+  ],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {}
