@@ -112,19 +112,6 @@ export class AuthController {
     return this.authService.login(req.user);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(ClassSerializerInterceptor)
-  @Get('profile')
-  async getProfile(@Request() req: SessionRequest): Promise<User> {
-    if (!req.user) {
-      this.logger.error(
-        'This is the impossible type error where the user is authenticated but the `req.user` is `undefined`',
-      );
-      throw new InternalServerErrorException('Unexpected error');
-    }
-    return req.user;
-  }
-
   @Post('tfa')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
