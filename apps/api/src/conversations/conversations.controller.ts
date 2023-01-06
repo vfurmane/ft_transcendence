@@ -8,6 +8,7 @@ import { createConversationDto } from './dtos/createConversation.dto';
 import { sendMessageDto } from './dtos/sendMessage.dto';
 import { updateRoleDto } from './dtos/updateRole.dto';
 import { paramIsUUIDDto } from './dtos/paramIsUUID.dto';
+import { muteUserDto } from './dtos/muteUser.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(JwtAuthGuard)
@@ -74,5 +75,11 @@ export class ConversationsController {
     leaveConversation(@Param() conversationId : paramIsUUIDDto, @CurrentUser() currentUser : User)
     {
         return (this.conversationsService.leaveConversation(currentUser, conversationId.id));
+    }
+
+    @Patch('/:id/mute/:username')
+    muteUser(@Body('until') timestamp: string, @Param() muteUser: muteUserDto, @CurrentUser() currentUser: User)
+    {
+
     }
 }

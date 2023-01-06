@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ConversationRestriction } from './conversationRestriction.entity';
 import { ConversationToUser } from './conversationToUser.entity';
 import { Message } from './message.entity';
 
@@ -37,4 +38,7 @@ export class Conversation {
 
   @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.conversation, {cascade: true})
   conversationToUsers!: ConversationToUser[];
+
+  @OneToMany(() => ConversationRestriction, (conversationRestriction) => conversationRestriction.conversation, {cascade: true})
+  conversationRestrictions!: ConversationRestriction[]
 }

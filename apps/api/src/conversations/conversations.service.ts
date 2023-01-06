@@ -10,6 +10,8 @@ import { createConversationDto } from './dtos/createConversation.dto';
 import { updateRoleDto } from './dtos/updateRole.dto';
 import { Message } from './entities/message.entity';
 import * as bcrypt from 'bcrypt';
+import { conversationRestrictionEnum } from './conversationRestriction.enum';
+import { ConversationRestriction } from './entities/conversationRestriction.entity';
 
 @Injectable()
 export class ConversationsService {
@@ -17,7 +19,8 @@ export class ConversationsService {
         @InjectRepository(Conversation) private readonly conversationRepository: Repository<Conversation>,
         @InjectRepository(ConversationToUser) private readonly conversationToUserRepository: Repository<ConversationToUser>,
         @InjectRepository(User) private readonly userRepository: Repository<User>,
-        @InjectRepository(Message) private readonly messageRepository: Repository<Message>
+        @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
+        @InjectRepository(ConversationRestriction) private readonly conversationRestrictionRepository: Repository<ConversationRestriction>
     ) {}
 
     async getListOfDMs(user: User): Promise<Conversation[]>
@@ -394,5 +397,90 @@ export class ConversationsService {
         if (userRole[0].role === conversationRole.OWNER)
             throw new ForbiddenException("Please pick a new owner for this conversation before leaving it")
         return this.conversationToUserRepository.remove(userRole[0]);
+    }
+
+    async clearRestrictions(conversationId: string)
+    {
+        const time = new Date()
+        const conversation = await this.conversationRepository.findOne(
+            {
+                relations:
+                {
+                    conversationToUsers: true,
+                    conversationRestrictions: true
+                },
+                where:
+                {
+                    id: conversationId
+                }
+            }
+        )
+        if (!conversation)
+            throw new NotFoundException()
+        for (let conversationRestriction of conversation.conversationRestrictions)
+        {
+            if (conversationRestriction.until && conversationRestriction.until < time)
+                await this.conversationRestrictionRepository.remove(conversationRestriction)
+        }
+    }
+
+    async restrictUser(currentUser: User, conversationId: string, username: string, restrictionType: conversationRestrictionEnum, until: Date | null)
+    {
+        this.clearRestrictions(conversationId)
+        if (until && until < new Date())
+            throw new ForbiddenException("Time is in the past")
+        if (!until && restrictionType === conversationRestrictionEnum.MUTE)
+            throw new ForbiddenException("Muting users requires a time")
+        const conversation = await this.conversationRepository.findOne(
+            {
+                relations:
+                {
+                    conversationToUsers: true,
+                    conversationRestrictions: true
+                },
+                where:
+                {
+                    id: conversationId
+                }
+            }
+        )
+        if (!conversation)
+            throw new NotFoundException()
+        if (conversation.groupConversation === false)
+            throw new ForbiddenException("Cannot restrict other party in a direct message conversation")
+        const currentUserRole = conversation.conversationToUsers.filter( (el) => el.user.id === currentUser.id );
+        if (!currentUserRole.length)
+            throw new ForbiddenException("No such conversation found")
+        const currentUserRestrictions = conversation.conversationRestrictions.filter( (el) => el.target.id === currentUser.id )
+        if (currentUserRestrictions.length)
+            throw new ForbiddenException("Cannot restrict other party while some restrictions are upon you")
+        const targetUserRole = conversation.conversationToUsers.filter( (el) => el.user.name === username );
+        if (!targetUserRole.length)
+            throw new NotFoundException("Target user not found in this conversation")
+        if (currentUserRole[0].role === conversationRole.USER || targetUserRole[0].role === conversationRole.OWNER
+            || (targetUserRole[0].role === conversationRole.ADMIN && currentUserRole[0].role !== conversationRole.OWNER))
+            throw new ForbiddenException("You do not hold such power")
+        const targetUserRestrictions = conversation.conversationRestrictions.filter( (el) => el.target.name === username )
+        if (targetUserRestrictions.length)
+        {
+            for (let restriction of targetUserRestrictions)
+            {
+                if (restriction.status === conversationRestrictionEnum.MUTE && restrictionType === conversationRestrictionEnum.MUTE)
+                {
+                    restriction.until = until;
+                    this.conversationRestrictionRepository.save(restriction)
+                    return `User muted until ${until}`
+                }
+                else if (restriction.status === conversationRestrictionEnum.BAN && restrictionType === conversationRestrictionEnum.BAN)
+                {
+                    restriction.until = until;
+                    this.conversationRestrictionRepository.save(restriction)
+                    return `User banned until ${until ? until : "the end of times"}`
+                }
+            }
+        }
+        let conversationRestriction = this.conversationRestrictionRepository.create({issuer: currentUser, target: targetUserRole[0].user, conversation: conversation, status: restrictionType, until: until})
+        this.conversationRestrictionRepository.save(conversationRestriction)
+        return `User ${restrictionType === conversationRestrictionEnum.BAN ? "banned" : "muted"} until ${until}`
     }
 }
