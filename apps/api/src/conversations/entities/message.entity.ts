@@ -1,3 +1,4 @@
+import { Expose, Transform } from 'class-transformer';
 import {
   Column,
   CreateDateColumn,
@@ -6,9 +7,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from '../users/user.entity';
+import { User } from '../../users/user.entity';
 import { Conversation } from './conversation.entity';
 
+@Expose()
 @Entity()
 export class Message {
   @PrimaryGeneratedColumn('uuid')

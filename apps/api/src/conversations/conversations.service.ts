@@ -3,12 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/user.entity';
 import { MoreThan, Repository, RepositoryNotTreeError } from 'typeorm';
 import { unreadMessagesResponse } from 'types';
-import { Conversation } from './conversation.entity';
+import { Conversation } from './entities/conversation.entity';
 import { conversationRole } from './conversationRole.enum';
-import { ConversationToUser } from './conversationToUser.entity';
+import { ConversationToUser } from './entities/conversationToUser.entity';
 import { createConversationDto } from './dtos/createConversation.dto';
 import { updateRoleDto } from './dtos/updateRole.dto';
-import { Message } from './message.entity';
+import { Message } from './entities/message.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -189,7 +189,9 @@ export class ConversationsService {
         const fullUser = await this.userRepository.findOne({
             relations: 
             {
-                conversationToUsers: true
+                conversationToUsers: {
+                    conversation: true
+                }
             },
             where:
             {
@@ -236,6 +238,7 @@ export class ConversationsService {
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
         userRole.lastRead = new Date()
         this.conversationToUserRepository.save(userRole);
+        console.error(conversation.messages)
         return (conversation.messages);
     }
 
@@ -244,6 +247,10 @@ export class ConversationsService {
     {
         let response : unreadMessagesResponse = {totalNumberOfUnreadMessages: 0, UnreadMessage: []}
         const conversationToUser = await this.conversationToUserRepository.find({
+            relations:
+            {
+                conversation: true
+            },
             where: {
                 user:
                 {
@@ -340,5 +347,27 @@ export class ConversationsService {
         const joined = this.conversationToUserRepository.create({role: conversationRole.USER, lastRead: new Date(), user: currentUser, conversation: conversation});
         this.conversationToUserRepository.save(joined);
         return (conversation)
+    }
+
+    async getConversationParticipants(currentUser: User, conversationId: string)
+    {
+        const conversation = await this.conversationRepository.findOne({
+            relations:
+            {
+                conversationToUsers:
+                {
+                    conversation: false
+                }
+            },
+            where: {
+                id: conversationId
+            }
+        });
+        if (!conversation)
+            throw new NotFoundException()
+        const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)
+        if (!userRole.length)
+            throw new NotFoundException()
+        return (conversation.conversationToUsers)
     }
 }

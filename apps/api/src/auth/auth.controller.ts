@@ -1,13 +1,16 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
   Post,
   Req,
   Request,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiMovedPermanentlyResponse,
@@ -25,12 +28,15 @@ import { LocalAuthGuard } from './local-auth.guard';
 import { AddUserDto } from 'src/users/add-user.dto';
 import { JwtAuthGuard } from './jwt-auth-guard';
 import { CurrentUser } from 'src/users/current-user.decorator';
+import { UsersService } from 'src/users/users.service';
 
+@UseInterceptors(ClassSerializerInterceptor)
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly userService: UsersService,
     readonly logger: Logger,
   ) {}
 
@@ -87,6 +93,6 @@ export class AuthController {
   @Get('/whoami')
   whoami(@CurrentUser() currentUser: User)
   {
-    return (currentUser);
+    return this.userService.getById(currentUser.id);
   }
 }

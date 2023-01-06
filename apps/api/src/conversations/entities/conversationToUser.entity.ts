@@ -9,8 +9,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Conversation } from './conversation.entity';
-import { conversationRole } from './conversationRole.enum';
+import { conversationRole } from '../conversationRole.enum';
+import { Expose, Transform } from 'class-transformer';
 
+@Expose()
 @Entity()
 export class ConversationToUser {
   @PrimaryGeneratedColumn('uuid')
@@ -29,6 +31,6 @@ export class ConversationToUser {
   @ManyToOne(() => User, (user) => user.conversationToUsers, {eager: true})
   user!: User;
 
-  @ManyToOne(()=> Conversation, (conversation) => conversation.conversationToUsers, {eager: true})
+  @ManyToOne(()=> Conversation, (conversation) => conversation.conversationToUsers)
   conversation!: Conversation;
 }

@@ -1,3 +1,4 @@
+import { Exclude, Expose } from 'class-transformer';
 import {
   Column,
   CreateDateColumn,
@@ -9,6 +10,7 @@ import {
 import { ConversationToUser } from './conversationToUser.entity';
 import { Message } from './message.entity';
 
+@Expose()
 @Entity()
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
@@ -20,6 +22,7 @@ export class Conversation {
   @Column({default: false})
   groupConversation!: boolean
 
+  @Exclude()
   @Column('varchar', { length: 255, nullable: true, default: null })
   password!: string
 
