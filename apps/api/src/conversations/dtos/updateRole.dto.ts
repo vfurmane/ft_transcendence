@@ -4,10 +4,6 @@ import { conversationRole } from "../conversationRole.enum";
 export class updateRoleDto {
     @IsNotEmpty()
     @IsUUID()
-    conversationId!: string;
-
-    @IsNotEmpty()
-    @IsUUID()
     userId!: string;
 
     @IsNotEmpty()

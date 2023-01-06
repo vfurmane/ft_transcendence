@@ -79,10 +79,7 @@ export class ConversationsService {
             for (let creatorDM of creatorDMs)
             {
                 if (recipientDMs.filter(el => el.id === creatorDM.id).length)
-                {
-                    console.error("Conversation already exists");
                     return (creatorDM);
-                }
             }
         }
         const createdConversation = this.conversationRepository.create(newConversation);
@@ -115,7 +112,7 @@ export class ConversationsService {
         return (createdConversation);
     }
 
-    async updateRole(newRole: updateRoleDto, currentUser: User): Promise<boolean>
+    async updateRole(conversationId: string, newRole: updateRoleDto, currentUser: User): Promise<boolean>
     {
         const conversation = await this.conversationRepository.findOne({
             relations:
@@ -124,7 +121,7 @@ export class ConversationsService {
             },
             where:
             {
-                id : newRole.conversationId
+                id : conversationId
             }});
         if (!conversation)
         {
@@ -206,7 +203,6 @@ export class ConversationsService {
         {
             conversations.push(conversationToUser.conversation);
         }
-        console.error(currentUser);
         return (conversations);
     }
 
@@ -238,7 +234,6 @@ export class ConversationsService {
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
         userRole.lastRead = new Date()
         this.conversationToUserRepository.save(userRole);
-        console.error(conversation.messages)
         return (conversation.messages);
     }
 
@@ -263,7 +258,7 @@ export class ConversationsService {
         {
             return (response)
         }
-        for (let conversation of conversationToUser)
+        for (let role of conversationToUser)
         {
             const unreadMessages = await this.messageRepository.findAndCount({
                 relations:
@@ -272,17 +267,17 @@ export class ConversationsService {
                 },
                 where:
                 {
-                    created_at: MoreThan(conversation.lastRead),
+                    created_at: MoreThan(role.lastRead),
                     conversation:
                     {
-                        id : conversation.conversation.id
+                        id : role.conversation.id
                     }
                 }
             })
             if (unreadMessages[1])
             {
                 response.totalNumberOfUnreadMessages += unreadMessages[1];
-                response.UnreadMessage.push({conversationId: unreadMessages[0][0].conversation.id, numberOfUnreadMessages: unreadMessages[1]})
+                response.UnreadMessage.push({conversationId: unreadMessages[0][0].conversation.id, name: unreadMessages[0][0].conversation.name, numberOfUnreadMessages: unreadMessages[1]})
             }
         }
         return (response);
@@ -311,11 +306,11 @@ export class ConversationsService {
         )
         if (!conversation)
             return new NotFoundException()
+        const newMessage = this.messageRepository.create({sender: currentUser, conversation: conversation, content: content});
+        await this.messageRepository.save(newMessage);
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
         userRole.lastRead = new Date()
-        const newMessage = this.messageRepository.create({sender: currentUser, conversation: conversation, content: content});
-        this.messageRepository.save(newMessage);
-        console.error(newMessage);
+        this.conversationToUserRepository.save(userRole);
         return (true)
     }
 
@@ -354,10 +349,7 @@ export class ConversationsService {
         const conversation = await this.conversationRepository.findOne({
             relations:
             {
-                conversationToUsers:
-                {
-                    conversation: false
-                }
+                conversationToUsers: true
             },
             where: {
                 id: conversationId
@@ -369,5 +361,38 @@ export class ConversationsService {
         if (!userRole.length)
             throw new NotFoundException()
         return (conversation.conversationToUsers)
+    }
+
+    async leaveConversation(currentUser: User, conversationId: string)
+    {
+        const conversation = await this.conversationRepository.findOne({
+            relations:
+            {
+                conversationToUsers:
+                {
+                    conversation: true
+                }
+            },
+            where: {
+                id: conversationId,
+                conversationToUsers:
+                {
+                    user:
+                    {
+                        id: currentUser.id
+                    }
+                }
+            }
+        });
+        if (!conversation)
+            throw new NotFoundException();
+        const userRole = conversation.conversationToUsers.filter((el) => el.user.id === currentUser.id)
+        if (!userRole.length)
+            throw new ForbiddenException()
+        if (conversation.groupConversation === false)
+            throw new ForbiddenException("Cannot leave direct message conversation")
+        if (userRole[0].role === conversationRole.OWNER)
+            throw new ForbiddenException("Please pick a new owner for this conversation before leaving it")
+        return this.conversationToUserRepository.remove(userRole[0]);
     }
 }

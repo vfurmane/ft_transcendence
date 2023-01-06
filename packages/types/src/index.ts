@@ -20,6 +20,7 @@ export interface unreadMessagesResponse
 
 export interface unreadMessages {
   conversationId: string;
+  name: string;
   numberOfUnreadMessages: number;
 }
 

@@ -1,4 +1,4 @@
-import { Body, ClassSerializerInterceptor, Controller, Get, Param, Post, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards, UseInterceptors } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth-guard';
 import { CurrentUser } from 'src/users/current-user.decorator';
 import { User } from 'src/users/user.entity';
@@ -22,17 +22,10 @@ export class ConversationsController {
         return (this.conversationsService.getConversations(currentUser));
     }
 
-    @Post('/create')
+    @Put('/create')
     createConversation(@Body() newConversation: createConversationDto, @CurrentUser() currentUser: User): Promise<Conversation>
     {
-        console.log("here");
         return (this.conversationsService.createConversation(newConversation, currentUser));
-    }
-
-    @Post('/updateRole')
-    updateRole(@Body() newRole: updateRoleDto, @CurrentUser() CurrentUser: User): Promise<boolean>
-    {
-        return this.conversationsService.updateRole(newRole, CurrentUser);
     }
 
     @Get('/unread')
@@ -60,7 +53,7 @@ export class ConversationsController {
     }
 
     @Post('/:id/join')
-    joinProtectedConversation(@Param() conversationId: paramIsUUIDDto, @CurrentUser() currentUser : User, @Body() password: string)
+    joinProtectedConversation(@Param() conversationId: paramIsUUIDDto, @CurrentUser() currentUser : User, @Body('password') password: string)
     {
         return this.conversationsService.joinConversation(currentUser, conversationId.id, password);
     }
@@ -69,5 +62,17 @@ export class ConversationsController {
     getConversationParticipants(@Param() conversationId: paramIsUUIDDto, @CurrentUser() currentUser : User)
     {
         return this.conversationsService.getConversationParticipants(currentUser, conversationId.id);
+    }
+
+    @Patch('/:id/updateRole')
+    updateRole(@Param() conversationId: paramIsUUIDDto, @Body() newRole: updateRoleDto, @CurrentUser() CurrentUser: User): Promise<boolean>
+    {
+        return this.conversationsService.updateRole(conversationId.id, newRole, CurrentUser);
+    }
+
+    @Delete('/:id/leave')
+    leaveConversation(@Param() conversationId : paramIsUUIDDto, @CurrentUser() currentUser : User)
+    {
+        return (this.conversationsService.leaveConversation(currentUser, conversationId.id));
     }
 }

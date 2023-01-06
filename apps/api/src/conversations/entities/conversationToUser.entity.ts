@@ -10,11 +10,12 @@ import {
 } from 'typeorm';
 import { Conversation } from './conversation.entity';
 import { conversationRole } from '../conversationRole.enum';
-import { Expose, Transform } from 'class-transformer';
+import { Exclude, Expose, Transform } from 'class-transformer';
 
 @Expose()
 @Entity()
 export class ConversationToUser {
+  @Exclude()
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
