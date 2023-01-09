@@ -9,6 +9,8 @@ import { sendMessageDto } from './dtos/sendMessage.dto';
 import { updateRoleDto } from './dtos/updateRole.dto';
 import { paramIsUUIDDto } from './dtos/paramIsUUID.dto';
 import { muteUserDto } from './dtos/muteUser.dto';
+import { conversationRestrictionEnum } from './conversationRestriction.enum';
+import { isDateDto } from './dtos/isDate.dto';
 
 @UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(JwtAuthGuard)
@@ -78,8 +80,8 @@ export class ConversationsController {
     }
 
     @Patch('/:id/mute/:username')
-    muteUser(@Body('until') timestamp: string, @Param() muteUser: muteUserDto, @CurrentUser() currentUser: User)
+    muteUser(@Body() timestamp: isDateDto, @Param() muteUser: muteUserDto, @CurrentUser() currentUser: User)
     {
-
+        return (this.conversationsService.restrictUser(currentUser, muteUser.id, muteUser.username, conversationRestrictionEnum.MUTE, new Date(timestamp.date)))
     }
 }

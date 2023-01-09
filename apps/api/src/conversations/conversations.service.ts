@@ -309,6 +309,11 @@ export class ConversationsService {
         )
         if (!conversation)
             return new NotFoundException()
+        await this.clearRestrictions(conversationId);
+        let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationId);
+        console.error(currentUserRestrictions);
+        if (currentUserRestrictions.length)
+            return new ForbiddenException(`Cannot post message to a conversation while you are ${currentUserRestrictions[0].status}`);
         const newMessage = this.messageRepository.create({sender: currentUser, conversation: conversation, content: content});
         await this.messageRepository.save(newMessage);
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
@@ -419,15 +424,39 @@ export class ConversationsService {
             throw new NotFoundException()
         for (let conversationRestriction of conversation.conversationRestrictions)
         {
-            if (conversationRestriction.until && conversationRestriction.until < time)
+            if (conversationRestriction.until && conversationRestriction.until.getTime() < time.getTime())
                 await this.conversationRestrictionRepository.remove(conversationRestriction)
         }
+    }
+
+    async   getUserRestrictionsOnConversation(target: User, conversationId: string)
+    {
+        return (await this.conversationRestrictionRepository.find(
+            {
+                relations:
+                {
+                    conversation: true
+                },
+                where:
+                {
+                    conversation:
+                    {
+                        id: conversationId
+                    },
+                    target:
+                    {
+                        id: target.id
+                    }
+                }
+            }
+        ));
     }
 
     async restrictUser(currentUser: User, conversationId: string, username: string, restrictionType: conversationRestrictionEnum, until: Date | null)
     {
         this.clearRestrictions(conversationId)
-        if (until && until < new Date())
+        console.error(until, new Date());
+        if (until && until.getTime() < (new Date()).getTime())
             throw new ForbiddenException("Time is in the past")
         if (!until && restrictionType === conversationRestrictionEnum.MUTE)
             throw new ForbiddenException("Muting users requires a time")
