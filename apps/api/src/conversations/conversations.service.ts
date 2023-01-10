@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/user.entity';
 import { MoreThan, Repository, RepositoryNotTreeError } from 'typeorm';
@@ -117,6 +117,7 @@ export class ConversationsService {
 
     async updateRole(conversationId: string, newRole: updateRoleDto, currentUser: User): Promise<boolean>
     {
+        await this.clearRestrictions(conversationId);
         const conversation = await this.conversationRepository.findOne({
             relations:
             {
@@ -129,6 +130,11 @@ export class ConversationsService {
         if (!conversation)
         {
             throw new NotFoundException("Conversation could not be found");
+        }
+        let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationId)
+        if (currentUserRestrictions.length)
+        {
+            throw new ForbiddenException("Cannot update roles while you have some restrictions upon you");
         }
         const currentUserRoles = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)
         if (currentUserRoles.length === 0)
@@ -190,7 +196,9 @@ export class ConversationsService {
             relations: 
             {
                 conversationToUsers: {
-                    conversation: true
+                    conversation: {
+                        conversationRestrictions: true
+                    }
                 }
             },
             where:
@@ -204,6 +212,9 @@ export class ConversationsService {
         }
         for (let conversationToUser of fullUser.conversationToUsers)
         {
+            await this.clearRestrictions(conversationToUser.conversation.id);
+            let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationToUser.conversation.id)
+            conversationToUser.conversation.conversationRestrictions = currentUserRestrictions
             conversations.push(conversationToUser.conversation);
         }
         return (conversations);
@@ -211,6 +222,16 @@ export class ConversationsService {
 
     async getMessages(currentUser: User, conversationId: string): Promise<Message[]>
     {
+        await this.clearRestrictions(conversationId);
+        let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationId)
+        if (currentUserRestrictions.length)
+        {
+            for (let restriction of currentUserRestrictions)
+            {
+                if (restriction.status === conversationRestrictionEnum.BAN)
+                    throw new ForbiddenException("Cannot get messages from a conversation from which you have been banned");
+            }
+        }
         const conversation = await this.conversationRepository.findOne({
             relations: 
             {
@@ -263,6 +284,22 @@ export class ConversationsService {
         }
         for (let role of conversationToUser)
         {
+            let canAccess = true;
+            await this.clearRestrictions(role.conversation.id);
+            let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, role.conversation.id)
+            if (currentUserRestrictions.length)
+            {
+                for (let restriction of currentUserRestrictions)
+                {
+                    if (restriction.status === conversationRestrictionEnum.BAN)
+                    {
+                        canAccess = false;
+                        break ;
+                    }
+                }
+            }
+            if (!canAccess)
+                continue ;
             const unreadMessages = await this.messageRepository.findAndCount({
                 relations:
                 {
@@ -288,6 +325,7 @@ export class ConversationsService {
 
     async postMessage(currentUser: User, conversationId: string, content: string)
     {
+        await this.clearRestrictions(conversationId);
         let conversation = await this.conversationRepository.findOne(
             {
                 relations:
@@ -309,11 +347,9 @@ export class ConversationsService {
         )
         if (!conversation)
             return new NotFoundException()
-        await this.clearRestrictions(conversationId);
         let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationId);
-        console.error(currentUserRestrictions);
         if (currentUserRestrictions.length)
-            return new ForbiddenException(`Cannot post message to a conversation while you are ${currentUserRestrictions[0].status}`);
+            return new ForbiddenException(`Cannot post message to a conversation while you are ${currentUserRestrictions[0].status === conversationRestrictionEnum.BAN ? 'banned' : 'muted'}`);
         const newMessage = this.messageRepository.create({sender: currentUser, conversation: conversation, content: content});
         await this.messageRepository.save(newMessage);
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)[0]
@@ -324,6 +360,7 @@ export class ConversationsService {
 
     async joinConversation(currentUser: User, conversationId: string, password: string | null)
     {
+        await this.clearRestrictions(conversationId);
         const conversation = await this.conversationRepository.findOne({
             relations:
             {
@@ -335,6 +372,15 @@ export class ConversationsService {
         });
         if (!conversation)
             throw new NotFoundException()
+        let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationId)
+        if (currentUserRestrictions.length)
+        {
+            for (let restriction of currentUserRestrictions)
+            {
+                if (restriction.status === conversationRestrictionEnum.BAN)
+                    throw new ForbiddenException("You are not allowed to join a conversation from which you are banned");
+            }
+        }
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)
         if (userRole.length)
             return (conversation)
@@ -343,7 +389,7 @@ export class ConversationsService {
         if (conversation.password)
         {
             if (!password)
-                throw new ForbiddenException("This conversation requires a password")
+                throw new UnauthorizedException("This conversation requires a password")
             else if (!(await bcrypt.compare(password, conversation.password)))
                 throw new ForbiddenException();
         }
@@ -354,6 +400,7 @@ export class ConversationsService {
 
     async getConversationParticipants(currentUser: User, conversationId: string)
     {
+        await this.clearRestrictions(conversationId);
         const conversation = await this.conversationRepository.findOne({
             relations:
             {
@@ -368,6 +415,15 @@ export class ConversationsService {
         const userRole = conversation.conversationToUsers.filter(el => el.user.id === currentUser.id)
         if (!userRole.length)
             throw new NotFoundException()
+        let currentUserRestrictions = await this.getUserRestrictionsOnConversation(currentUser, conversationId)
+        if (currentUserRestrictions.length)
+        {
+            for (let restriction of currentUserRestrictions)
+            {
+                if (restriction.status === conversationRestrictionEnum.BAN)
+                    throw new ForbiddenException("You are not allowed to see the participants of this conversation while you are banned")
+            }
+        }
         return (conversation.conversationToUsers)
     }
 
@@ -454,8 +510,7 @@ export class ConversationsService {
 
     async restrictUser(currentUser: User, conversationId: string, username: string, restrictionType: conversationRestrictionEnum, until: Date | null)
     {
-        this.clearRestrictions(conversationId)
-        console.error(until, new Date());
+        await this.clearRestrictions(conversationId)
         if (until && until.getTime() < (new Date()).getTime())
             throw new ForbiddenException("Time is in the past")
         if (!until && restrictionType === conversationRestrictionEnum.MUTE)
@@ -510,6 +565,6 @@ export class ConversationsService {
         }
         let conversationRestriction = this.conversationRestrictionRepository.create({issuer: currentUser, target: targetUserRole[0].user, conversation: conversation, status: restrictionType, until: until})
         this.conversationRestrictionRepository.save(conversationRestriction)
-        return `User ${restrictionType === conversationRestrictionEnum.BAN ? "banned" : "muted"} until ${until}`
+        return `User ${restrictionType === conversationRestrictionEnum.BAN ? "banned" : "muted"} until ${until ? until : "the end of times"}`
     }
 }

@@ -84,4 +84,16 @@ export class ConversationsController {
     {
         return (this.conversationsService.restrictUser(currentUser, muteUser.id, muteUser.username, conversationRestrictionEnum.MUTE, new Date(timestamp.date)))
     }
+
+    @Patch('/:id/ban/:username')
+    banUser(@Body() timestamp: isDateDto, @Param() muteUser: muteUserDto, @CurrentUser() currentUser: User)
+    {
+        return (this.conversationsService.restrictUser(currentUser, muteUser.id, muteUser.username, conversationRestrictionEnum.BAN, new Date(timestamp.date)))
+    }
+
+    @Get('/:id/ban/:username')
+    banUserForever(@Param() muteUser: muteUserDto, @CurrentUser() currentUser: User)
+    {
+        return (this.conversationsService.restrictUser(currentUser, muteUser.id, muteUser.username, conversationRestrictionEnum.BAN, null))
+    }
 }

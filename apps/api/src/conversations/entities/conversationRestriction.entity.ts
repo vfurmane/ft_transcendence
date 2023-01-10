@@ -20,6 +20,7 @@ export class ConversationRestriction
     @ManyToOne(() => Conversation)
     conversation!: Conversation
 
+    @Expose()
     @Column({
         type: "enum",
         enum: conversationRestrictionEnum,
