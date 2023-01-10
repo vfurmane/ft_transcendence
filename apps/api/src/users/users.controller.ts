@@ -20,13 +20,6 @@ export class UsersController {
   ) {}
 
   @UseGuards(JwtAuthGuard)
-  //Choose an interceptor (which data to exclude)
-  @Get()
-  async findAll(): Promise<User[]> {
-    return await this.usersService.findAll();
-  }
-
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get('profile')
   async getProfile(@Request() req: SessionRequest): Promise<User> {
