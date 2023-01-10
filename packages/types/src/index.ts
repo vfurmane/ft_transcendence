@@ -1,6 +1,8 @@
+import { User as UserEntity } from "src/users/user.entity";
+
 export interface State {
   id: string;
-  user: User | null;
+  user: UserEntity | null;
   created_at: Date;
   updated_at: Date;
   token: string;
@@ -32,11 +34,7 @@ export interface TfaNeededResponse {
 export interface JwtPayload {
   sub: string;
   name: string;
+  jti: string;
 }
 
-export type SessionRequest = Request & { state?: State, user?: User }
-
-export interface JwtPayload {
-  sub: string;
-  name: string;
-}
+export type SessionRequest = Request & { state?: State, user?: UserEntity }

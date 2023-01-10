@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { Jwt } from 'src/auth/jwt.entity';
 
 @Entity()
 export class User {
@@ -40,4 +41,7 @@ export class User {
 
   @Column('boolean', { default: false })
   tfa_setup!: boolean;
+
+  @OneToMany(() => Jwt, (jwt) => jwt.user)
+  jwts!: Jwt[];
 }

@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
@@ -11,6 +17,7 @@ import { RegisterUserDto } from 'src/users/register-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { State as StateEntity } from './state.entity';
 import { User as UserEntity } from '../users/user.entity';
+import { Jwt as JwtEntity } from './jwt.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -20,9 +27,13 @@ export class AuthService {
     private readonly statesRepository: Repository<StateEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
+    @InjectRepository(JwtEntity)
+    private readonly jwtsRepository: Repository<JwtEntity>,
     private readonly httpService: HttpService,
     private readonly jwtService: JwtService,
     private readonly logger: Logger,
+
+    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
   ) {}
 
@@ -65,10 +76,28 @@ export class AuthService {
     return null;
   }
 
-  login(user: User): AccessTokenResponse {
+  async validateJwt(
+    user: UserEntity,
+    payload: JwtPayload,
+  ): Promise<UserEntity | null> {
+    //Check if jwt exist in db (in case of revocation)
+    const jwt = await this.jwtsRepository.findOneBy({ id: payload.jti });
+    if (!jwt) return null;
+
+    return user;
+  }
+
+  async login(user: UserEntity): Promise<AccessTokenResponse> {
+    const jwtEntity = new JwtEntity();
+    jwtEntity.user = user;
+    await this.jwtsRepository.save(jwtEntity).then((jwt) => {
+      jwtEntity.id = jwt.id;
+    });
+
     const payload: JwtPayload = {
       sub: user.id,
       name: user.name,
+      jti: jwtEntity.id,
     };
     return {
       access_token: this.jwtService.sign(payload),
