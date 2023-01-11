@@ -1,5 +1,6 @@
-export enum conversationRole {
+export enum ConversationRoleEnum {
     ADMIN = "admin",
     OWNER = "owner",
-    USER = "user"
+    USER = "user",
+    LEFT = 'left'
 }

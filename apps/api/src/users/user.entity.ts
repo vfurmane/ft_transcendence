@@ -1,5 +1,5 @@
 import { Exclude, Expose } from 'class-transformer';
-import { ConversationToUser } from 'src/conversations/entities/conversationToUser.entity';
+import { ConversationRole } from 'src/conversations/entities/conversationRole.entity';
 import {
   Column,
   CreateDateColumn,
@@ -38,6 +38,6 @@ export class User {
   messages!: Message[];
 
   @Expose()
-  @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.user)
-  conversationToUsers!: ConversationToUser[]; 
+  @OneToMany(() => ConversationRole, (conversationRole) => conversationRole.user)
+  conversationRoles!: ConversationRole[]; 
 }

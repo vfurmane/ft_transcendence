@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ConversationRestriction } from './conversationRestriction.entity';
-import { ConversationToUser } from './conversationToUser.entity';
+import { ConversationRole } from './conversationRole.entity';
 import { Message } from './message.entity';
 
 @Expose()
@@ -36,9 +36,6 @@ export class Conversation {
   @OneToMany(() => Message, (message) => message.conversation, {cascade: true})
   messages!: Message[]
 
-  @OneToMany(() => ConversationToUser, (conversationToUser) => conversationToUser.conversation, {cascade: true})
-  conversationToUsers!: ConversationToUser[];
-
-  @OneToMany(() => ConversationRestriction, (conversationRestriction) => conversationRestriction.conversation, {cascade: true})
-  conversationRestrictions!: ConversationRestriction[]
+  @OneToMany(() => ConversationRole, (conversationRole) => conversationRole.conversation, {cascade: true})
+  conversationRoles!: ConversationRole[];
 }

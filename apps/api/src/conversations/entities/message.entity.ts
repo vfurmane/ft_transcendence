@@ -16,7 +16,7 @@ export class Message {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => User, (user) => user.messages)
+  @ManyToOne(() => User, (user) => user.messages, {eager: true})
   sender!: User
 
   @ManyToOne(() => Conversation, (conversation) => conversation.messages)

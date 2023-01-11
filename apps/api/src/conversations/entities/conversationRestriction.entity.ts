@@ -3,6 +3,7 @@ import { User } from "src/users/user.entity";
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { conversationRestrictionEnum } from "../conversationRestriction.enum";
 import { Conversation } from "./conversation.entity";
+import { ConversationRole } from "./conversationRole.entity";
 
 @Exclude()
 @Entity()
@@ -14,11 +15,8 @@ export class ConversationRestriction
     @ManyToOne(() => User, {eager: true})
     issuer!: User
 
-    @ManyToOne(() => User, {eager: true})
-    target!: User
-
-    @ManyToOne(() => Conversation)
-    conversation!: Conversation
+    @ManyToOne(() => ConversationRole, (conversationRole) => conversationRole.restrictions)
+    target!: ConversationRole
 
     @Expose()
     @Column({
@@ -27,6 +25,7 @@ export class ConversationRestriction
     })
     status!: conversationRestrictionEnum
 
+    @Expose()
     @Column({ type: 'timestamptz', nullable: true })
     until!: Date | null
 }

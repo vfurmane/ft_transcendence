@@ -4,7 +4,7 @@ import { Conversation } from './entities/conversation.entity';
 import { Message } from './entities/message.entity';
 import { ConversationsController } from './conversations.controller';
 import { ConversationsService } from './conversations.service';
-import { ConversationToUser } from './entities/conversationToUser.entity';
+import { ConversationRole } from './entities/conversationRole.entity';
 import { UsersModule } from 'src/users/users.module';
 import { ConversationRestriction } from './entities/conversationRestriction.entity';
 
@@ -12,7 +12,7 @@ import { ConversationRestriction } from './entities/conversationRestriction.enti
   imports: [
     TypeOrmModule.forFeature([Message]),
     TypeOrmModule.forFeature([Conversation]),
-    TypeOrmModule.forFeature([ConversationToUser]),
+    TypeOrmModule.forFeature([ConversationRole]),
     TypeOrmModule.forFeature([ConversationRestriction]),
     UsersModule
   ],
