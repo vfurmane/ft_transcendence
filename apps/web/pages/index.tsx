@@ -15,11 +15,17 @@ export default function Web() {
     }
   }, [router]);
 
+  const logout = (): any => {
+    localStorage.removeItem("access_token");
+    router.push("/login");
+  };
+
   if (loading) return <Loading></Loading>;
 
   return (
     <div>
       <h1>Web</h1>
+      <button onClick={logout}>Logout</button>
     </div>
   );
 }
